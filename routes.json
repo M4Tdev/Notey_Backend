@@ -1,0 +1,4 @@
+{
+	"/:userId/notes": "/:userId",
+	"/:userId/notes/:id": "/:userId/:id"
+}
