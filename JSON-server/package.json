@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "json-server --port 3030 --routes routes.json --watch db.json"
+    "start": "json-server --port 3033 --routes routes.json --watch db.json"
   },
   "author": "",
   "license": "ISC",
