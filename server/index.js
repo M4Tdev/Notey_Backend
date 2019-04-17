@@ -92,16 +92,20 @@ low(adapter)
 
     // PATCH note by id
     app.patch('/api/:userId/notes/:noteId', async (req, res) => {
-      const { userId, noteId } = req.params;
+      try {
+        const { userId, noteId } = req.params;
 
-      const note = await db
-        .get('users')
-        .get(userId)
-        .find({ id: noteId })
-        .assign({ ...req.body })
-        .write();
+        const note = await db
+          .get('users')
+          .get(userId)
+          .find({ id: noteId })
+          .assign({ ...req.body })
+          .write();
 
-      res.status(200).send(note);
+        res.status(200).send(note);
+      } catch (err) {
+        console.log(err);
+      }
     });
 
     // Set db default values
