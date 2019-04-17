@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3030;
 
 // Middleware
 app.use(bodyParser.json());
-// app.use(cors);
+app.use(cors());
 
 // Echo/test route
 app.get('/echo', (req, res) => {
