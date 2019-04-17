@@ -76,7 +76,7 @@ low(adapter)
     // GET note by id
     app.get('/api/:userId/notes/:noteId', async (req, res) => {
       try {
-        const { userId, noteId } = await req.params;
+        const { userId, noteId } = req.params;
 
         const note = await db
           .get('users')
@@ -103,6 +103,29 @@ low(adapter)
           .write();
 
         res.status(200).send(note);
+      } catch (err) {
+        console.log(err);
+      }
+    });
+
+    // DELETE note by id
+    app.delete('/api/:userId/notes/:noteId', async (req, res) => {
+      try {
+        const { userId, noteId } = req.params;
+
+        const index = await db
+          .get('users')
+          .get(userId)
+          .findIndex({ id: noteId })
+          .value();
+
+        await db
+          .get('users')
+          .get(userId)
+          .splice(index, 1)
+          .write();
+
+        res.status(200).json({});
       } catch (err) {
         console.log(err);
       }
