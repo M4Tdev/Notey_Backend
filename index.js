@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const low = require('lowdb');
 const FileAsync = require('lowdb/adapters/FileAsync');
+const helmet = require('helmet');
 
 const shortid = require('shortid');
 
@@ -15,6 +16,7 @@ const PORT = process.env.PORT || 3030;
 // Middleware
 app.use(bodyParser.json());
 app.use(cors());
+app.user(helmet());
 
 // Echo/test route
 app.get('/echo', (req, res) => {
