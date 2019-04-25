@@ -1,13 +1,11 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const low = require('lowdb');
-const FileAsync = require('lowdb/adapters/FileAsync');
 const helmet = require('helmet');
+const mongodb = require('mongodb');
+const dotenv = require('dotenv').config();
 
 const shortid = require('shortid');
-
-const adapter = new FileAsync('db.json');
 
 const app = express();
 
@@ -18,146 +16,125 @@ app.use(bodyParser.json());
 app.use(cors());
 app.use(helmet());
 
-// Echo/test route
-app.get('/echo', (req, res) => {
-  res.json({ msg: 'API works' });
+// env variables
+const dbUser = process.env.DB_USER;
+const dbPasswd = process.env.DB_PASSWD;
+
+// MongoDB function
+const loadNotesCollection = async () => {
+  const client = await mongodb.MongoClient.connect(
+    `mongodb+srv://${dbUser}:${dbPasswd}@cluster0-jmzjv.mongodb.net/test?retryWrites=true`,
+    {
+      useNewUrlParser: true,
+    }
+  );
+
+  return client.db('NoteyDB').collection('users'); // top change to new production collection "notes"
+};
+
+// Routes
+
+const auth = 'noteyapp';
+
+app.get('/echo', async (req, res) => {
+  res.json({ Status: 'API is working fine' });
 });
 
-low(adapter)
-  .then(db => {
-    // Routes
+// GET users notes
+app.get('/api/:userId/notes', async (req, res) => {
+  if (req.headers.authorization === auth) {
+    try {
+      const { userId } = req.params;
 
-    const auth = 'noteyapp';
+      const notes = await loadNotesCollection();
 
-    // GET users notes
-    app.get('/api/:userId/notes', async (req, res) => {
-      if (req.headers.authorization === auth) {
-        try {
-          const { userId } = req.params;
-          const hasUser = await db
-            .get('users')
-            .has(userId)
-            .value();
+      const user = await notes.find({ userId }).toArray();
 
-          // If user does not exist, create it
-          if (!hasUser) {
-            await db
-              .get('users')
-              .assign({ [userId]: [] })
-              .write();
-          }
+      res.status(200).send(user);
+    } catch (err) {
+      console.log(err);
+    }
+  } else {
+    res.status(401).json({ error: 'You are not authorized!' });
+  }
+});
 
-          // Take users notes from db
-          const user = await db
-            .get('users')
-            .get(userId)
-            .value();
+// POST new note
+app.post('/api/:userId/notes', async (req, res) => {
+  if (req.headers.authorization === auth) {
+    try {
+      const { userId } = req.params;
 
-          res.status(200).send(user);
-        } catch (err) {
-          console.log(err);
-        }
-      } else {
-        res.status(401).json({ error: 'You are not authorized!' });
-      }
-    });
+      const note = { id: shortid.generate(), userId, ...req.body };
 
-    // POST new note
-    app.post('/api/:userId/notes', async (req, res) => {
-      if (req.headers.authorization === auth) {
-        try {
-          const { userId } = req.params;
+      const notes = await loadNotesCollection();
 
-          const note = { id: shortid.generate(), ...req.body };
+      await notes.insertOne({ ...note });
 
-          await db
-            .get('users')
-            .get(userId)
-            .push(note)
-            .write();
+      res.status(201).send(note);
+    } catch (err) {
+      console.log(err);
+    }
+  } else {
+    res.status(401).json({ error: 'You are not authorized!' });
+  }
+});
 
-          res.status(201).send(note);
-        } catch (err) {
-          console.log(err);
-        }
-      } else {
-        res.status(401).json({ error: 'You are not authorized!' });
-      }
-    });
+// GET note by id
+app.get('/api/:userId/notes/:noteId', async (req, res) => {
+  if (req.headers.authorization === auth) {
+    try {
+      const { userId, noteId } = req.params;
 
-    // GET note by id
-    app.get('/api/:userId/notes/:noteId', async (req, res) => {
-      if (req.headers.authorization === auth) {
-        try {
-          const { userId, noteId } = req.params;
+      const notes = await loadNotesCollection();
 
-          const note = await db
-            .get('users')
-            .get(userId)
-            .find({ id: noteId })
-            .value();
+      const note = await notes.find({ userId, id: noteId }).toArray();
 
-          res.status(200).send(note);
-        } catch (err) {
-          console.error(err);
-        }
-      } else {
-        res.status(401).json({ error: 'You are not authorized' });
-      }
-    });
+      res.status(200).send(note);
+    } catch (err) {
+      console.error(err);
+    }
+  } else {
+    res.status(401).json({ error: 'You are not authorized' });
+  }
+});
 
-    // PATCH note by id
-    app.patch('/api/:userId/notes/:noteId', async (req, res) => {
-      if (req.headers.authorization === auth) {
-        try {
-          const { userId, noteId } = req.params;
+// PATCH note by id
+app.patch('/api/:userId/notes/:noteId', async (req, res) => {
+  if (req.headers.authorization === auth) {
+    try {
+      const { userId, noteId } = req.params;
 
-          const note = await db
-            .get('users')
-            .get(userId)
-            .find({ id: noteId })
-            .assign({ ...req.body })
-            .write();
+      const notes = await loadNotesCollection();
+      await notes.updateOne({ userId, id: noteId }, { $set: { ...req.body } });
 
-          res.status(200).send(note);
-        } catch (err) {
-          console.log(err);
-        }
-      } else {
-        res.status(401).json({ error: 'You are not authorized' });
-      }
-    });
+      const updatedNote = await notes.find({ userId, id: noteId }).toArray();
 
-    // DELETE note by id
-    app.delete('/api/:userId/notes/:noteId', async (req, res) => {
-      if (req.headers.authorization === auth) {
-        try {
-          const { userId, noteId } = req.params;
+      res.status(200).send(updatedNote);
+    } catch (err) {
+      console.log(err);
+    }
+  } else {
+    res.status(401).json({ error: 'You are not authorized' });
+  }
+});
 
-          const index = await db
-            .get('users')
-            .get(userId)
-            .findIndex({ id: noteId })
-            .value();
+// DELETE note by id
+app.delete('/api/:userId/notes/:noteId', async (req, res) => {
+  if (req.headers.authorization === auth) {
+    try {
+      const { userId, noteId } = req.params;
 
-          await db
-            .get('users')
-            .get(userId)
-            .splice(index, 1)
-            .write();
+      const notes = await loadNotesCollection();
+      await notes.remove({ userId, id: noteId }, true);
 
-          res.status(200).json({});
-        } catch (err) {
-          console.log(err);
-        }
-      } else {
-        res.status(401).json({ error: 'You are not authorized' });
-      }
-    });
+      res.status(200).json({});
+    } catch (err) {
+      console.log(err);
+    }
+  } else {
+    res.status(401).json({ error: 'You are not authorized' });
+  }
+});
 
-    // Set db default values
-    return db.defaults({ users: {} }).write();
-  })
-  .then(() => {
-    app.listen(PORT, () => console.log(`Server is listening on port: ${PORT}`));
-  });
+app.listen(PORT, () => console.log(`Server is listening on port: ${PORT}`));
