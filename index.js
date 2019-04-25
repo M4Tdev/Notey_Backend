@@ -29,7 +29,7 @@ const loadNotesCollection = async () => {
     }
   );
 
-  return client.db('NoteyDB').collection('users'); // top change to new production collection "notes"
+  return client.db('NoteyDB').collection('notes');
 };
 
 // Routes
