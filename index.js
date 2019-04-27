@@ -90,7 +90,7 @@ app.get('/api/:userId/notes/:noteId', async (req, res) => {
 
       const note = await notes.find({ userId, id: noteId }).toArray();
 
-      res.status(200).send(note);
+      res.status(200).send(note[0]);
     } catch (err) {
       console.error(err);
     }
@@ -126,7 +126,7 @@ app.delete('/api/:userId/notes/:noteId', async (req, res) => {
       const { userId, noteId } = req.params;
 
       const notes = await loadNotesCollection();
-      await notes.remove({ userId, id: noteId }, true);
+      await notes.deleteOne({ userId, id: noteId });
 
       res.status(200).json({});
     } catch (err) {
