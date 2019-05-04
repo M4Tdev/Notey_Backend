@@ -137,4 +137,22 @@ app.delete('/api/:userId/notes/:noteId', async (req, res) => {
   }
 });
 
+// DELETE all notes
+app.delete('/api/:userId/notes', async (req, res) => {
+  if (req.headers.authorization === auth) {
+    try {
+      const { userId } = req.params;
+
+      const notes = await loadNotesCollection();
+      await notes.deleteMany({ userId });
+
+      res.status(200).json({});
+    } catch (err) {
+      console.log(err);
+    }
+  } else {
+    res.status(401).json({ error: 'You are not authorized' });
+  }
+});
+
 app.listen(PORT, () => console.log(`Server is listening on port: ${PORT}`));
