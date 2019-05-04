@@ -139,7 +139,7 @@ app.delete('/api/:userId/notes/:noteId', async (req, res) => {
 
 // DELETE all notes
 app.delete('/api/:userId/notes', async (req, res) => {
-  if (req.header.authorization === auth) {
+  if (req.headers.authorization === auth) {
     try {
       const { userId } = req.params;
 
