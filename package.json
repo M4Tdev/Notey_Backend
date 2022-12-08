@@ -11,10 +11,10 @@
   "author": "Mateusz Lesiuk",
   "license": "ISC",
   "dependencies": {
-    "body-parser": "^1.18.3",
+    "body-parser": "^1.20.1",
     "cors": "^2.8.5",
     "dotenv": "^7.0.0",
-    "express": "^4.16.4",
+    "express": "^4.18.2",
     "helmet": "^3.16.0",
     "lowdb": "^1.0.0",
     "mongodb": "^3.2.3",
